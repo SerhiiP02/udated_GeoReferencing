@@ -1,0 +1,9 @@
+rasterio
+opencv-python
+numpy
+customtkinter
+tkintermapview
+tkhtmlview
+Pillow
+memory-profiler
+folium

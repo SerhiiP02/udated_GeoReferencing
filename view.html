@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaflet TIFF Overlay</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-tiff/dist/leaflet-tiff.min.js"></script>
+</head>
+<body>
+
+<div id="map" style="width: 800px; height: 600px;"></div>
+<label class="opacity-label">Opacity: <span id="opacityValue">0.7</span></label>
+<br>
+<input type="range" min="0" max="1" step="0.01" value="0.7" class="opacity-slider" id="opacitySlider">
+
+<script>
+    // Зчитування imageBounds та rotation з текстового файлу
+    var imageBounds;
+    var rotation;
+    fetch('imageBounds.txt')
+      .then(response => response.text())
+      .then(data => {
+        const lines = data.split('\n');
+        imageBounds = lines.slice(0, 2).map(line => line.split(' ').map(parseFloat));
+        rotation = parseFloat(lines[2].split(' ')[1]);
+
+        // Визначення координат центру наложення
+        var centerLat = (imageBounds[0][0] + imageBounds[1][0]) / 2;
+        var centerLng = (imageBounds[0][1] + imageBounds[1][1]) / 2;
+        var center = [centerLat, centerLng];
+
+        // Визначення масштабу карти
+        var bounds = L.latLngBounds(imageBounds);
+        var map = L.map('map').fitBounds(bounds);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        var imageUrlOrigin = 'result\\rotated_final.jpg';
+        var overlay = L.imageOverlay(imageUrlOrigin, imageBounds, {
+          opacity: 0.5
+        }).addTo(map);
+
+        // Обробник події зміни значення повзунка
+        var opacitySlider = document.getElementById('opacitySlider');
+        var opacityValue = document.getElementById('opacityValue');
+        opacitySlider.addEventListener('input', function() {
+            // Оновлення значення прозорості
+            opacityValue.textContent = this.value;
+            // Встановлення нового значення прозорості для оверлея
+            overlay.setOpacity(this.value);
+        });
+
+        // Додавання обробника кліків на карту
+        map.on('click', function(e) {
+            var lat = e.latlng.lat.toFixed(6); // Визначення широти
+            var lng = e.latlng.lng.toFixed(6); // Визначення довготи
+
+            map.eachLayer(function(layer) {
+                if (layer instanceof L.Marker) {
+                    map.removeLayer(layer);
+                }
+            });
+
+            // Додавання маркера із підписом
+            var marker = L.marker(e.latlng).addTo(map);
+            marker.bindPopup(`Lat: ${lat}, Lng: ${lng}`).openPopup();
+        });
+      });
+</script>
+</body>
+</html>
